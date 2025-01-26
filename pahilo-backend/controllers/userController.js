@@ -52,11 +52,11 @@ exports.verifyOtp = async (req, res) => {
 };
 
 exports.completeRegistration = async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, role } = req.body;
   const email = req.session.email;
 
   try {
-    const response = await completeRegistration(email, name, password);
+    const response = await completeRegistration(email, name, password, role);
 
     //clear session email after registration completes
     delete req.session.email;
@@ -86,6 +86,7 @@ exports.loginUser = async (req, res) => {
     res.status(200).json({
       message: "Login Successful",
       accessToken: accessToken,
+      role: user.role,
     });
   } catch (error) {
     console.error("Error logging in:", error);

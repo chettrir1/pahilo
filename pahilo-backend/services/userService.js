@@ -22,12 +22,19 @@ async function sendOTP(email) {
   return { message: "OTP sent to your email. Please verify." };
 }
 
-async function completeRegistration(email, name, password) {
+async function completeRegistration(email, name, password, role) {
+  if (role !== "rider" && role !== "driver") {
+    throw new Error(
+      "Invalid role specified. Role must be either 'rider' or 'driver'."
+    );
+  }
+
   const hashedPassword = await argon2.hash(password);
 
-  const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+  const query =
+    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
 
-  await db.execute(query, [name, email, hashedPassword]);
+  await db.execute(query, [name, email, hashedPassword, role]);
 
   const deleteOtpQuery = "DELETE FROM otp_verification WHERE email = ?";
   await db.execute(deleteOtpQuery, [email]);

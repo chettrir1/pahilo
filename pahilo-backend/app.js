@@ -3,10 +3,18 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
-const app = express();
-const PORT = 3000;
-
+const rideRoutes = require("./routes/rideRoutes");
+const http = require("http");
+const WebSocket = require("ws");
+const socketConfig = require("./config/socketConfig");
 require("dotenv").config();
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+const PORT = process.env.PORT || 3000;
+
+let users = {};
 
 // Middleware
 app.use(
@@ -25,6 +33,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/rides", rideRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
