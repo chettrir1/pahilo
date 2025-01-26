@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-
 const {
   register,
   verifyOtp,
@@ -9,11 +8,9 @@ const {
   refreshToken,
   logout,
 } = require("../controllers/userController");
-
 const {
   handleValidationErrors,
 } = require("../middlewares/handleValidationErrors");
-
 const {
   emailValidation,
   otpValidation,

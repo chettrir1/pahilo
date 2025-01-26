@@ -1,7 +1,22 @@
 const express = require("express");
-const rideController = require("../controllers/rideController");
+const {
+  requestRide,
+  acceptRide,
+  rejectRide,
+} = require("../controllers/rideController");
+const authenticateJWT = require("../middlewares/auth");
 
-const router = express.router();
+module.exports = (app) => {
+  const router = express.Router();
 
-//Book a ride
-router.post("/book", rideController.bookRide);
+  //request-ride
+  router.post("/request-ride", authenticateJWT, requestRide);
+
+  //accept-ride
+  router.post("/accept-ride", authenticateJWT, acceptRide);
+
+  //reject-ride
+  router.post("/reject-ride", authenticateJWT, rejectRide);
+
+  app.use("/api/rides", router);
+};
