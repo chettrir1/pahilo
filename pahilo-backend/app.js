@@ -7,14 +7,17 @@ const rideRoutes = require("./routes/rideRoutes");
 const http = require("http");
 const WebSocket = require("ws");
 const socketConfig = require("./config/socketConfig");
+const { setWSS } = require("./services/socketService");
 require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+setWSS(wss);
 const PORT = process.env.PORT || 3000;
 
 let users = {};
+socketConfig(wss, users);
 
 // Middleware
 app.use(
@@ -41,6 +44,6 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

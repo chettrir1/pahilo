@@ -66,6 +66,7 @@ function generateAccessToken(user) {
     id: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
   };
 
   const secret = process.env.JWT_SECRET;
@@ -77,6 +78,7 @@ function generateRefreshToken(user) {
     id: user.id,
     email: user.email,
     name: user.name,
+    role: user.role,
   };
 
   const secret = process.env.JWT_SECRET;

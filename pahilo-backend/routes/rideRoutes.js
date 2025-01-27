@@ -4,19 +4,18 @@ const {
   acceptRide,
   rejectRide,
 } = require("../controllers/rideController");
+
 const authenticateJWT = require("../middlewares/auth");
 
-module.exports = (app) => {
-  const router = express.Router();
+const router = express.Router();
 
-  //request-ride
-  router.post("/request-ride", authenticateJWT, requestRide);
+// Ride request endpoint (only accessible by authenticated riders)
+router.post("/request-ride", authenticateJWT, requestRide);
 
-  //accept-ride
-  router.post("/accept-ride", authenticateJWT, acceptRide);
+// Ride accept endpoint (only accessible by drivers)
+router.post("/accept-ride", authenticateJWT, acceptRide);
 
-  //reject-ride
-  router.post("/reject-ride", authenticateJWT, rejectRide);
+// Ride reject endpoint (only accessible by drivers)
+router.post("/reject-ride", authenticateJWT, rejectRide);
 
-  app.use("/api/rides", router);
-};
+module.exports = router;
