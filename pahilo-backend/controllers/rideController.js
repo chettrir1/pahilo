@@ -1,26 +1,63 @@
-const db = require("../services/db");
+const {
+  requestRide,
+  acceptRide,
+  rejectRide,
+} = require("../services/rideService");
 
-exports.bookRide = async (req, res) => {
-  const { userId, pickupLocation, dropOffLocation } = req.body;
-
-  const fare = calculateFare(pickupLocation, dropOffLocation);
-
-  if (!userId || !pickupLocation || !dropOffLocation) {
-    return res.status(400).json({ error: "All fields are required!" });
+exports.requestRide = async (req, res) => {
+  const { pickupLocation, destinationLocation } = req.body;
+  const { id, role } = req.user;
+  if (role !== "rider") {
+    return res.status(403).json({ error: "Only riders can request a ride" });
   }
 
-  const query =
-    "INSERT INTO rides (user_id, pickup_location, drop_off_location, fare) VALUES (?, ?, ?,?)";
-
   try {
-    await db.execute(query, [userId, pickupLocation, dropOffLocation, fare]);
-    res.status(201).json({ message: "Ride booked successfully", fare });
+    const rideDetails = await requestRide(
+      id,
+      pickupLocation,
+      destinationLocation
+    );
+    res.status(200).json({
+      message: "Ride requested successfully",
+      rideId: rideDetails.rideId,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error booking ride!" });
+    console.error("Error requesting ride:", error);
+    res.status(500).json({ error: "Error requesting ride!" });
   }
 };
 
-const calculateFare = async (pickupLocation, dropOffLocation) => {
-  //TOTO replace with actual logic later
-  return 10.0;
+exports.acceptRide = async (req, res) => {
+  const { rideId } = req.body;
+  const { id, role } = req.user;
+
+  if (role !== "driver") {
+    return res.status(403).json({ error: "Only drivers can accept a ride" });
+  }
+
+  try {
+    const result = await acceptRide(rideId, id);
+    res.status(200).json({ message: result.message });
+  } catch (error) {
+    console.error("Error accepting ride:", error);
+    res.status(500).json({ error: "Error accepting ride!" });
+  }
+};
+
+exports.rejectRide = async (req, res) => {
+  console.log("Body Info:", req.body);
+  const { rideId } = req.body;
+  const { id, role } = req.user;
+
+  if (role !== "driver") {
+    return res.status(403).json({ error: "Only drivers can reject a ride" });
+  }
+
+  try {
+    const result = await rejectRide(rideId);
+    res.status(200).json({ message: result.message });
+  } catch (error) {
+    console.error("Error rejecting ride:", error);
+    res.status(500).json({ error: "Error rejecting ride!" });
+  }
 };

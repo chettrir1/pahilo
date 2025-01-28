@@ -1,7 +1,21 @@
 const express = require("express");
-const rideController = require("../controllers/rideController");
+const {
+  requestRide,
+  acceptRide,
+  rejectRide,
+} = require("../controllers/rideController");
 
-const router = express.router();
+const authenticateJWT = require("../middlewares/auth");
 
-//Book a ride
-router.post("/book", rideController.bookRide);
+const router = express.Router();
+
+// Ride request endpoint (only accessible by authenticated riders)
+router.post("/request-ride", authenticateJWT, requestRide);
+
+// Ride accept endpoint (only accessible by drivers)
+router.post("/accept-ride", authenticateJWT, acceptRide);
+
+// Ride reject endpoint (only accessible by drivers)
+router.post("/reject-ride", authenticateJWT, rejectRide);
+
+module.exports = router;
