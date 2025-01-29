@@ -4,6 +4,7 @@ const {
   notifyRider,
   notifyRiderRejection,
 } = require("../services/socketService");
+const { createResponse } = require("../utils/responseFormatter");
 
 async function requestRide(userId, pickupLocation, destinationLocation) {
   if (!pickupLocation || !destinationLocation) {
@@ -40,7 +41,7 @@ async function requestRide(userId, pickupLocation, destinationLocation) {
   };
 
   notifyDrivers(rideDetails);
-  return rideDetails;
+  return createResponse("success", "Ride requested successfully", rideDetails);
 }
 
 async function acceptRide(rideId, driverId) {
@@ -53,18 +54,46 @@ async function acceptRide(rideId, driverId) {
     throw new Error("Ride not found or already accepted!");
   }
 
-  const getRideQuery = "SELECT rider_id FROM rides WHERE id = ?";
+  const getRideQuery = `
+    SELECT r.rider_id, u.name AS rider_name
+    FROM rides r
+    JOIN users u ON r.rider_id = u.id
+    WHERE r.id = ?
+  `;
+
   const [rideDetails] = await db.execute(getRideQuery, [rideId]);
 
   if (rideDetails.length === 0) {
     throw new Error("Ride not found!");
   }
 
-  const riderId = rideDetails[0].rider_id;
+  const rider = {
+    id: rideDetails[0].rider_id,
+    name: rideDetails[0].rider_name,
+  };
 
-  notifyRider(riderId, rideId, driverId);
+  const getDriverQuery = `
+    SELECT id, name
+    FROM users WHERE id = ?
+  `;
 
-  return { message: "Ride accepted successfully!" };
+  const [driverDetails] = await db.execute(getDriverQuery, [driverId]);
+
+  if (driverDetails.length === 0) {
+    throw new Error("Driver not found!");
+  }
+
+  const driver = {
+    id: driverDetails[0].id,
+    name: driverDetails[0].name,
+  };
+
+  notifyRider(rideId, rider, driver);
+
+  return createResponse("success", "Ride accepted successfully", {
+    rideId,
+    driver,
+  });
 }
 
 async function rejectRide(rideId) {
@@ -83,7 +112,7 @@ async function rejectRide(rideId) {
   }
 
   notifyRiderRejection(rideId);
-  return { message: "Ride rejected successfully!" };
+  return createResponse("success", "Ride rejected successfully", { rideId });
 }
 
 module.exports = { requestRide, acceptRide, rejectRide };

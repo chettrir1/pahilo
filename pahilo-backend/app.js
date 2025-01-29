@@ -8,6 +8,7 @@ const http = require("http");
 const WebSocket = require("ws");
 const socketConfig = require("./config/socketConfig");
 const { setWSS } = require("./services/socketService");
+const db = require("./services/db");
 require("dotenv").config();
 
 const app = express();
@@ -17,7 +18,7 @@ setWSS(wss);
 const PORT = process.env.PORT || 3000;
 
 let users = {};
-socketConfig(wss, users);
+socketConfig(wss, users, db);
 
 // Middleware
 app.use(

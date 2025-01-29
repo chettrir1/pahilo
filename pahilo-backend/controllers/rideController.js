@@ -3,12 +3,18 @@ const {
   acceptRide,
   rejectRide,
 } = require("../services/rideService");
+const { createResponse } = require("../utils/responseFormatter");
 
 exports.requestRide = async (req, res) => {
   const { pickupLocation, destinationLocation } = req.body;
   const { id, role } = req.user;
   if (role !== "rider") {
-    return res.status(403).json({ error: "Only riders can request a ride" });
+    const response = createResponse(
+      "error",
+      "Only riders can request a ride",
+      null
+    );
+    return res.status(403).json(response);
   }
 
   try {
@@ -17,13 +23,16 @@ exports.requestRide = async (req, res) => {
       pickupLocation,
       destinationLocation
     );
-    res.status(200).json({
-      message: "Ride requested successfully",
+    const response = createResponse("success", "Ride requested successfully", {
       rideId: rideDetails.rideId,
     });
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error requesting ride:", error);
-    res.status(500).json({ error: "Error requesting ride!" });
+    const response = createResponse("error", "Error requesting ride!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };
 
@@ -32,15 +41,24 @@ exports.acceptRide = async (req, res) => {
   const { id, role } = req.user;
 
   if (role !== "driver") {
-    return res.status(403).json({ error: "Only drivers can accept a ride" });
+    const response = createResponse(
+      "error",
+      "Only drivers can accept a ride",
+      null
+    );
+    return res.status(403).json(response);
   }
 
   try {
     const result = await acceptRide(rideId, id);
-    res.status(200).json({ message: result.message });
+    const response = createResponse("success", result.message, null);
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error accepting ride:", error);
-    res.status(500).json({ error: "Error accepting ride!" });
+    const response = createResponse("error", "Error accepting ride!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };
 
@@ -50,14 +68,23 @@ exports.rejectRide = async (req, res) => {
   const { id, role } = req.user;
 
   if (role !== "driver") {
-    return res.status(403).json({ error: "Only drivers can reject a ride" });
+    const response = createResponse(
+      "error",
+      "Only drivers can reject a ride",
+      null
+    );
+    return res.status(403).json(response);
   }
 
   try {
     const result = await rejectRide(rideId);
-    res.status(200).json({ message: result.message });
+    const response = createResponse("success", result.message, null);
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error rejecting ride:", error);
-    res.status(500).json({ error: "Error rejecting ride!" });
+    const response = createResponse("error", "Error rejecting ride!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };

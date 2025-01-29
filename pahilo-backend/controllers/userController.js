@@ -9,6 +9,7 @@ const { verifyOTP } = require("../services/otpService");
 const jwt = require("jsonwebtoken");
 const db = require("../services/db");
 const { validationResult } = require("express-validator");
+const { createResponse } = require("../utils/responseFormatter");
 
 exports.register = async (req, res) => {
   const { email } = req.body;
@@ -24,11 +25,17 @@ exports.register = async (req, res) => {
     //save the email in temporary storage
     req.session.email = email;
 
-    res
-      .status(200)
-      .json({ message: "OTP has been sent to your email.(123456)" });
+    const response = createResponse(
+      "success",
+      "OTP has been sent to your email"
+    );
+
+    res.status(200).json(response);
   } catch (error) {
-    res.status(500).json({ error: "Error sending OTP!" });
+    const response = createResponse("error", "Login Error!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };
 
@@ -39,32 +46,49 @@ exports.verifyOtp = async (req, res) => {
   try {
     // await verifyOTP(email, otp);
     if (otp === "123456") {
-      res.status(200).json({
-        message: "OTP verified successfully. Proceed with registration",
-      });
+      const response = createResponse(
+        "success",
+        "OTP verified successfully. Proceed with registration"
+      );
+
+      res.status(200).json(response);
     } else {
-      res.status(500).json({ error: "Invalid OTP!" });
+      const response = createResponse(
+        "error",
+        "Invalid OTP. Please try again!"
+      );
+      res.status(500).json(response);
     }
   } catch (error) {
     console.error("Error verifying OTP:", error);
-    res.status(500).json({ error: error.message });
+    const response = createResponse("error", "Error verifying OTP!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };
 
 exports.completeRegistration = async (req, res) => {
   const { name, password, role } = req.body;
+
   const email = req.session.email;
 
   try {
-    const response = await completeRegistration(email, name, password, role);
+    await completeRegistration(email, name, password, role);
 
     //clear session email after registration completes
     delete req.session.email;
 
-    res.status(200).json({ message: "User registered successfully!" });
+    const response = createResponse("success", "User registered successfully!");
+
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error complete registration:", error);
-    res.status(500).json({ error: "Error completing registration!" });
+    const response = createResponse("error", "Error completing registration!", {
+      error: error.message,
+    });
+
+    res.status(500).json(response);
   }
 };
 
@@ -83,14 +107,24 @@ exports.loginUser = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({
-      message: "Login Successful",
+    const { password: _, ...userWithoutPassword } = user.toObject
+      ? user.toObject()
+      : user;
+
+    const response = createResponse("success", "Login Successful", {
       accessToken: accessToken,
+      refreshToken: refreshToken,
       role: user.role,
+      user: userWithoutPassword,
     });
+
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error logging in:", error);
-    res.status(500).json({ error: "Error logging in!" });
+    const response = createResponse("error", "Login Error!", {
+      error: error.message,
+    });
+    res.status(500).json(response);
   }
 };
 
@@ -101,15 +135,20 @@ exports.refreshToken = (req, res) => {
 
   if (!secret) {
     console.error("No JWT secret provided.");
-    return res.status(500).json({
-      error: "Server configuration error. Please contact the administrator!",
-    });
+    const response = createResponse(
+      "error",
+      "Server configuration error. Please contact the administrator."
+    );
+    return res.status(500).json(response);
   }
 
   jwt.verify(refreshToken, secret, (err, decoded) => {
     if (err) {
       console.error("Invalid refresh token:", err);
-      return res.status(403).json({ error: "Invalid refresh token" });
+      const response = createResponse("error", "Invalid refresh token", {
+        error: err.message,
+      });
+      return res.status(403).json(response);
     }
 
     //create new access token
@@ -120,9 +159,12 @@ exports.refreshToken = (req, res) => {
     };
     const accessToken = generateAccessToken(payload);
 
-    res.status(200).json({
-      accessToken: accessToken,
-    });
+    const response = createResponse(
+      "success",
+      "Access token generated successfully",
+      { accessToken }
+    );
+    res.status(200).json(response);
   });
 };
 
@@ -130,12 +172,16 @@ exports.logout = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Error destroying session:", err);
-      return res.status(500).json({ error: "Error logging out" });
+      const response = createResponse("error", "Error logging out", {
+        error: err.message,
+      });
+      return res.status(500).json(response);
     }
     res.clearCookie("refreshToken", {
-      httoOnly: true,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
     });
-    res.status(200).json({ message: "Logged out successfully" });
+    const response = createResponse("success", "Logged out successfully", null);
+    res.status(200).json(response);
   });
 };

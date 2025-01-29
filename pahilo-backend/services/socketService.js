@@ -24,15 +24,22 @@ function notifyDrivers(rideDetails) {
   });
 }
 
-function notifyRider(users, riderId, rideId, driverId) {
-  const riderSocket = users[riderId];
+function notifyRider(users, rider, rideId, driver) {
+  const riderSocket = users[rider.id];
 
   if (riderSocket) {
     riderSocket.send(
       JSON.stringify({
         event: "rideAccepted",
         rideId,
-        driverId,
+        rider: {
+          id: rider.id,
+          name: rider.name,
+        },
+        driver: {
+          id: driver.id,
+          name: driver.name,
+        },
       })
     );
   }
