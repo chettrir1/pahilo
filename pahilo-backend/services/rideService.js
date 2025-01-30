@@ -23,6 +23,15 @@ async function requestRide(userId, pickupLocation, destinationLocation) {
     throw new Error("Missing latitude or longitude values.");
   }
 
+  const userQuery = `SELECT id, name, email, role FROM users WHERE id = ?`;
+  const [userRows] = await db.execute(userQuery, [userId]);
+
+  if (userRows.length === 0) {
+    throw new Error("User not found.");
+  }
+
+  const user = userRows[0];
+
   const query =
     "INSERT INTO rides (rider_id, pickup_latitude, pickup_longitude, destination_latitude, destination_longitude, status) VALUES (?, ?, ?, ?, ?, 'pending')";
 
@@ -36,15 +45,27 @@ async function requestRide(userId, pickupLocation, destinationLocation) {
 
   const rideDetails = {
     rideId: result.insertId,
+    userId: userId,
     pickupLocation,
     destinationLocation,
   };
 
-  notifyDrivers(rideDetails);
+  notifyDrivers(user, rideDetails);
   return createResponse("success", "Ride requested successfully", rideDetails);
 }
 
-async function acceptRide(rideId, driverId) {
+async function updateDriverLocation(driverId, latitude, longitude) {
+  const query = `INSERT INTO drivers (driver_id, latitude, longitude)
+  VALUES(?, ?, ?)
+  ON DUPLICATE KEY UPDATE latitude = VALUES(latitude), longitude = VALUES(longitude)`;
+
+  await db.execute(query, [driverId, latitude, longitude]);
+}
+
+async function acceptRide(rideId, driverId, driverLocation) {
+  const { latitude, longitude } = driverLocation;
+
+  await updateDriverLocation(driverId, latitude, longitude);
   const query =
     "UPDATE rides SET status = 'accepted', driver_id = ? WHERE id = ? AND status= 'pending'";
 
@@ -72,10 +93,22 @@ async function acceptRide(rideId, driverId) {
     name: rideDetails[0].rider_name,
   };
 
-  const getDriverQuery = `
-    SELECT id, name
-    FROM users WHERE id = ?
+  const getRiderUserQuery = `
+    SELECT id AS user_id FROM users WHERE id = ?
   `;
+  const [riderUserDetails] = await db.execute(getRiderUserQuery, [rider.id]);
+
+  if (riderUserDetails.length === 0) {
+    throw new Error("Rider not found in users table!");
+  }
+
+  const users = riderUserDetails[0];
+
+  const getDriverQuery = `
+  SELECT d.id, d.latitude, d.longitude, u.name
+  FROM drivers d
+  JOIN users u ON d.driver_id = u.id
+  WHERE d.driver_id = ?`;
 
   const [driverDetails] = await db.execute(getDriverQuery, [driverId]);
 
@@ -86,9 +119,13 @@ async function acceptRide(rideId, driverId) {
   const driver = {
     id: driverDetails[0].id,
     name: driverDetails[0].name,
+    location: {
+      latitude: driverDetails[0].latitude,
+      longitude: driverDetails[0].longitude,
+    },
   };
 
-  notifyRider(rideId, rider, driver);
+  notifyRider(users, rider, rideId, driver);
 
   return createResponse("success", "Ride accepted successfully", {
     rideId,
