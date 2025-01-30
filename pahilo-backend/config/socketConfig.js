@@ -54,12 +54,14 @@ module.exports = function (wss, users, db) {
             break;
 
           case "rejectRide":
-            const { rideId: rejectedRideId } = rideDetails;
+            const { rejectedRideId } = rideDetails;
             if (!rejectedRideId) {
               console.warn("Missing rideId in rejectRide event");
               return;
             }
-            notifyRiderRejection(users, rejectedRideId);
+            const riderII = await getRiderDetails(db, rejectedRideId);
+
+            notifyRiderRejection(users, riderII.id, rejectedRideId);
             break;
 
           default:

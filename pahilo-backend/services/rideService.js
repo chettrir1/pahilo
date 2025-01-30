@@ -136,6 +136,35 @@ async function acceptRide(rideId, driverId, driverLocation) {
 async function rejectRide(rideId) {
   console.log("Rejecting Ride ID:", rideId);
 
+  const getRideQuery = `
+    SELECT r.rider_id, u.name AS rider_name
+    FROM rides r
+    JOIN users u ON r.rider_id = u.id
+    WHERE r.id = ?
+  `;
+
+  const [rideDetails] = await db.execute(getRideQuery, [rideId]);
+
+  if (rideDetails.length === 0) {
+    throw new Error("Ride not found!");
+  }
+
+  const rider = {
+    id: rideDetails[0].rider_id,
+    name: rideDetails[0].rider_name,
+  };
+
+  const getRiderUserQuery = `
+    SELECT id AS user_id FROM users WHERE id = ?
+  `;
+  const [riderUserDetails] = await db.execute(getRiderUserQuery, [rider.id]);
+
+  if (riderUserDetails.length === 0) {
+    throw new Error("Rider not found in users table!");
+  }
+
+  const users = riderUserDetails[0];
+
   const query =
     "UPDATE rides SET status = 'rejected' WHERE id = ? AND status = 'pending'";
 
@@ -148,7 +177,7 @@ async function rejectRide(rideId) {
     throw new Error("Ride request is no longer available!");
   }
 
-  notifyRiderRejection(rideId);
+  notifyRiderRejection(users, rideId);
   return createResponse("success", "Ride rejected successfully", { rideId });
 }
 

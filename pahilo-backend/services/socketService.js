@@ -71,8 +71,8 @@ function notifyRider(users, rider, rideId, driver) {
   }
 }
 
-function notifyRiderRejection(user, rideId) {
-  const riderSocket = user[rideId];
+function notifyRiderRejection(user, riderId, rideId) {
+  const riderSocket = user[riderId];
 
   if (riderSocket && riderSocket.readyState === WebSocket.OPEN) {
     riderSocket.send(

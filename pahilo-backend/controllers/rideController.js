@@ -105,7 +105,7 @@ exports.acceptRide = async (req, res) => {
 
 exports.rejectRide = async (req, res) => {
   console.log("Body Info:", req.body);
-  const { rideId } = req.body;
+  const { rejectedRideId } = req.body;
   const { id, role } = req.user;
 
   if (role !== "driver") {
@@ -118,7 +118,7 @@ exports.rejectRide = async (req, res) => {
   }
 
   try {
-    const result = await rejectRide(rideId);
+    const result = await rejectRide(rejectedRideId);
     const response = createResponse("success", result.message, null);
     res.status(200).json(response);
   } catch (error) {
